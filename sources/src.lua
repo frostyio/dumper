@@ -269,7 +269,7 @@ local function u(l, e, a)
 				if n <= 2 then
 					if n <= 0 then
 						if (c[l[2]] ~= c[l[5]]) then
-							e = e + l[3]--1;
+							e = e + 1;
 						else
 							e = e + l[3];
 						end;

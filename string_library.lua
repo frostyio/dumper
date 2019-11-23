@@ -1,10 +1,10 @@
 local string_lib = {
     patterns = {
         ["ironbrew"] = {
-            [1] = {"wrapfunc", "local function %a+%(%a+,%s+%a+,%s+%a+%)", "last"},
+            [1] = {"wrapfunc", "local function %a+%(%a+,[%s]?%a+,[%s]?%a+%)", "last"},
             [2] = {"whiletrue", "while true do"},
-            [3] = {"findinstr", "~whiletrue~%s+(%a+)%s+=%s+%a+%[%a+%]"},
-            [4] = {"findeq", "~whiletrue~.%a+%[%a+%[2%]%]%s+~=%s+%a+%[%a+%[5%]%]", "all"}
+            [3] = {"findinstr", "~whiletrue~[%s]?(%a+)[%s]?=[%s]?%a+%[%a+%]"},
+            [4] = {"findeq", "~whiletrue~.%a+%[%a+%[2%]%][%s]?~=[%s]?%a+%[%a+%[5%]%]", "all"}
         }
     }
 };
@@ -42,7 +42,7 @@ function string_lib.dump(self)
         -- get all matches --
         local matches, last = {}, 0;
         src:gsub(pattern, function(match) 
-            local find = src:find(pattern, last)
+            local find = src:find(pattern, last);
             if find then
                 last = find + 1;
                 find = find + end_match;
@@ -62,8 +62,8 @@ function string_lib.dump(self)
             environment[name] = matches;
         end
 
-        if environment[name] == nil then
-            print(("Cannot find match for %s"):find(name));
+        if environment[name] == nil or #environment[name] == 0 then
+            return error(("Cannot find match for %s"):format(name));
         end
 
     end
@@ -87,6 +87,9 @@ function string_lib.lines(self)
 
         last = new_line + 1;
     end
+
+    local last_line = lines[#lines];
+    table.insert(lines, {last_line[2] + 1, #source});
 
     return lines;
 end
