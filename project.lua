@@ -38,6 +38,7 @@ do
 
 	function dump.add_edits(self, edits)
 		local final = self.data.source;
+
 		local add, least_location = 0, 0; -- add onto char location if less than least_location
 
 		-- string source functions --
@@ -92,22 +93,70 @@ do
 
 		local change_locations = {};
 
+		-- beggining --
+
+		local beggining = [[
+local inversed_functions = {};
+for name, func in pairs(getfenv()) do 
+	inversed_functions[func] = name;
+end]]
+
 		-- eq --
 
 		local eq_locations = self.dumped_variables["findeq"];
 		for _, location in pairs(eq_locations) do
 			local var1, var2 = location[2]:match(".(.-)~=(.+)");
 			local loc = location[1] - 5; -- if statement offset --
-			change_locations[#change_locations + 1] = {
+			table.insert(change_locations, {
 				"insert", 
-				(" print(\"eq: (\"..tostring(%s)..\" == \"..tostring(%s)..\")\", %s == %s)"):format(var1, var2, var1, var2),
+				(" print(\"[dumper] eq: (\"..tostring(%s)..\" == \"..tostring(%s)..\")\", %s == %s);"):format(var1, var2, var1, var2),
 				loc
-			};
+			});
 		end
+
+		-- call --
+
+		local call_locations = self.dumped_variables["findcall"];
+		for _, location in pairs(call_locations) do
+			local calling = location[2];
+			local func, args = calling:match("(.-)%((.+).");
+			local loc = location[1] - 1;
+			table.insert(change_locations, {
+				"insert", 
+				(" print(\"[dumper] calling (\" .. tostring(%s) .. \" [\".. tostring(inversed_functions[%s]) ..\"]) with args [\" .. tostring(%s) .. \"]\");"):format(func, func, args),
+				loc
+			});
+		end
+
+		-- loadk --
+
+		local loadk_locations = self.dumped_variables["findloadk"];
+		for _, location in pairs(loadk_locations) do
+			local setting = location[2]:match("=(.+)");
+			local loc = location[1];
+			table.insert(change_locations, {
+				"insert",
+				(" print(\"[dumper] loadk: \" .. tostring(%s));"):format(setting),
+				loc + 4
+			})
+		end
+
+		-- constants --
+
+		local wrap_func = self.dumped_variables["wrapfunc"];
+		local first_arg = wrap_func[2]:match("%((%w+),");
+		local constants = self.dumped_variables["findconstants"];
+		table.insert(change_locations, {"insert", ("table.foreach(%s[2], function(_, v) print(\"[dumper] Constant: \" .. tostring(v)) end);"):format(first_arg) , constants[3]})
 
 		-- modifying the source --
 
+		-- in order from first edits to last
+		table.sort(change_locations, function(a, b) 
+			return a[3] < b[3];
+		end);
+
 		self.final = self:add_edits(change_locations);
+		self.final = beggining .. self.final;
 	end
 
 	function dump.run_final(self)
@@ -132,7 +181,7 @@ end
 
 -- running --
 
-local src = io.open(path .. "sources/src.lua"):read("*all");
+local src = io.open(path .. "sources/src3.lua"):read("*all");
 local dumper = dump.new{source = src, type = "ironbrew"};
 dumper:gather_variables();
 dumper:modify_source();

@@ -4,7 +4,10 @@ local string_lib = {
             [1] = {"wrapfunc", "local function %a+%(%a+,[%s]?%a+,[%s]?%a+%)", "last"},
             [2] = {"whiletrue", "while true do"},
             [3] = {"findinstr", "~whiletrue~[%s]?(%a+)[%s]?=[%s]?%a+%[%a+%]"},
-            [4] = {"findeq", "~whiletrue~.%a+%[%a+%[2%]%][%s]?~=[%s]?%a+%[%a+%[5%]%]", "all"}
+            [4] = {"findeq", "~whiletrue~.%a+%[%a+%[2%]%][%s]?~=[%s]?%a+%[%a+%[5%]%]", "all"},
+            [5] = {"findcall", "%a+%[%a+%]%(%a+%(%a+,[%s]?1,[%s]?%a+[%s]?-[%s]?%a+%)%)", "all"},
+            [6] = {"findloadk", "then[%s]+(%w+%[%w+%[%d%]%][%s]?=[%s]?%w+%[%w+%[%d%]%])", "all"},
+            [7] = {"findconstants", "~wrapfunc~.-local.-local[%s]+(%a+)[%s]?="}
         }
     }
 };
@@ -34,7 +37,7 @@ function string_lib.dump(self)
         -- get previous matches to use --
         pattern = pattern:gsub("~(%w+)~", function(match) 
             assert(environment[match], "invalid previous match " .. match .. " for " .. name)
-            end_match = environment[match][3] - 1;
+            end_match = environment[match][3] + 1;
             src = src:sub(end_match);
             return "";
         end)
@@ -63,7 +66,7 @@ function string_lib.dump(self)
         end
 
         if environment[name] == nil or #environment[name] == 0 then
-            return error(("Cannot find match for %s"):format(name));
+            print(("Cannot find match for %s"):format(name));
         end
 
     end
